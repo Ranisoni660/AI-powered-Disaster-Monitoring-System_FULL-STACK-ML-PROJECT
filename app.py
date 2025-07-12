@@ -12,9 +12,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import logging
 import io
 import csv
-import psutil
 
-# Configure logging
 logging.basicConfig(filename='disaster_errors.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
@@ -23,34 +21,16 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 nltk.download('vader_lexicon', quiet=True)
 
-# Load spaCy models with disabled components to save memory
+# -------- LOGIC FROM FINAL FUNCTION STARTS HERE --------
+
 try:
-    nlp_en = spacy.load("en_core_web_sm", disable=["parser", "lemmatizer"])
-    nlp_multi = spacy.load("xx_ent_wiki_sm", disable=["parser", "lemmatizer"])
+    nlp_en = spacy.load("en_core_web_sm")
+    nlp_multi = spacy.load("xx_ent_wiki_sm")
 except Exception as e:
     logging.error(f"Failed to load spaCy models: {e}")
     raise
 
-# Load ML models at startup to avoid repeated loading
-try:
-    lr_model = pickle.load(open('lr_model.pkl', 'rb'))
-    vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
-    st = pickle.load(open('scaler.pkl', 'rb'))
-except FileNotFoundError as e:
-    logging.error(f"Model file not found: {e}")
-    print(f"Error: Model file not found - {e}")
-    raise
-except pickle.UnpicklingError as e:
-    logging.error(f"Failed to unpickle model: {e}")
-    print(f"Error: Failed to unpickle model - {e}")
-    raise
-
 sia = SentimentIntensityAnalyzer()
-
-def log_memory_usage():
-    process = psutil.Process()
-    mem_info = process.memory_info()
-    logging.info(f"Memory usage: {mem_info.rss / 1024 / 1024:.2f} MB")
 
 def load_disaster_keywords(file_path='disaster_keywords.txt'):
     try:
@@ -199,7 +179,19 @@ def calculate_severity(tweet, sentiment_scores, is_disaster, category):
     return round(severity, 2)
 
 def predict_tweet(tweet):
-    log_memory_usage()  # Log memory usage before processing
+    try:
+        lr_model = pickle.load(open('lr_model.pkl', 'rb'))
+        vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
+        st = pickle.load(open('scaler.pkl', 'rb'))
+    except FileNotFoundError as e:
+        logging.error(f"Model file not found: {e}")
+        print(f"Error: Model file not found - {e}")
+        return None
+    except pickle.UnpicklingError as e:
+        logging.error(f"Failed to unpickle model: {e}")
+        print(f"Error: Failed to unpickle model - {e}")
+        return None
+
     cleaned_tweet = clean_tweet(tweet)
     language = detect_language(tweet)
     translated_tweet = translate_tweet(tweet, language)
@@ -261,7 +253,6 @@ def predict_tweet(tweet):
 
     severity_score = calculate_severity(translated_tweet, sentiment_scores, is_disaster, category)
 
-    log_memory_usage()  # Log memory usage after processing
     return {
         'tweet': tweet,
         'cleaned_tweet': cleaned_tweet,
@@ -274,6 +265,7 @@ def predict_tweet(tweet):
         'sentiment': sentiment,
         'severity_score': severity_score
     }
+# -------- LOGIC FROM FINAL FUNCTION ENDS HERE --------
 
 # Routes
 @app.route('/')
@@ -306,7 +298,7 @@ def profile():
 
 @app.route('/more_categories')
 def more_categories():
-    return render_template('index.html')  # Or create a dedicated template
+    return render_template('index.html')  # Or create a dedicated template for more categories
 
 @app.route('/login')
 def login():
@@ -337,18 +329,15 @@ def upload_file():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
     results = []
-    batch_size = 100  # Process 100 tweets at a time
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-            for i in range(0, len(lines), batch_size):
-                batch = lines[i:i + batch_size]
-                for line in batch:
-                    tweet = line.strip()
-                    if tweet:
-                        res = predict_tweet(tweet)
-                        if res:
-                            results.append(res)
+            for line in lines:
+                tweet = line.strip()
+                if tweet:
+                    res = predict_tweet(tweet)
+                    if res:
+                        results.append(res)
         output = io.StringIO()
         writer = csv.writer(output)
         header = ["Tweet", "Cleaned Tweet", "Translated Tweet", "Language", "Is Disaster", "Confidence", "Location", "Category", "Sentiment", "Severity Score"]
@@ -376,5 +365,4 @@ def upload_file():
         return jsonify({'error': 'File processing failed.'}), 500
 
 if __name__ == '__main__':
-    log_memory_usage()  # Log memory at startup
     app.run(debug=True)
