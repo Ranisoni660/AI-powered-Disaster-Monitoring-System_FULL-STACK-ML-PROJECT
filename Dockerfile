@@ -18,4 +18,5 @@ RUN python -m spacy download en_core_web_sm
 COPY . .
 
 # Start the app with gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
+CMD ["gunicorn", "--workers=1", "--threads=1", "--preload", "-b", "0.0.0.0:8000", "app:app"]
+
