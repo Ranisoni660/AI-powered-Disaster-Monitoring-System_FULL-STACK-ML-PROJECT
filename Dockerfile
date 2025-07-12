@@ -9,8 +9,10 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# DOWNLOAD the spaCy model to fix the error!
+# Download spaCy models
 RUN python -m spacy download xx_ent_wiki_sm
+RUN python -m spacy download en_core_web_sm
+
 
 # Copy the rest of the application
 COPY . .
