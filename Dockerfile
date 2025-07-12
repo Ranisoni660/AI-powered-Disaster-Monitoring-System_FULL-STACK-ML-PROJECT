@@ -1,30 +1,19 @@
-# Use Python base with apt
+# Use compatible Python version
 FROM python:3.10-slim
-
-# Prevents prompts during package installation
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies needed for building wheels (e.g., blis, murmurhash)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Install Python dependencies
+# Copy and install dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy models (optional — depends on how you're loading them)
-RUN python -m spacy download en_core_web_sm
+# DOWNLOAD the spaCy model to fix the error!
+RUN python -m spacy download xx_ent_wiki_sm
 
-# Copy project files
+# Copy the rest of the application
 COPY . .
 
-# Expose port and set gunicorn as default entry
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
-
+# Start the app with gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
