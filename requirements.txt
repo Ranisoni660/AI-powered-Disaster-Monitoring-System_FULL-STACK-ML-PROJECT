@@ -28,7 +28,7 @@ nltk==3.9.1
 numpy==1.24.4          # ✅ DOWNGRADED for scipy 1.15.3 + scikit-learn 1.6.1 compatibility
 packaging==25.0
 preshed==3.0.9
-pydantic==2.11.4
+pydantic==1.10.13
 pydantic_core==2.33.2
 Pygments==2.19.1
 regex==2024.11.6
