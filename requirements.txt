@@ -8,7 +8,7 @@ certifi==2025.4.26
 charset-normalizer==3.4.2
 click==8.1.8
 cloudpathlib==0.21.1
-spacy==3.8.6
+spacy==3.5.4
 colorama==0.4.6
 confection==0.1.5
 cymem==2.0.11
@@ -44,7 +44,6 @@ shellingham==1.5.4
 six==1.17.0
 smart-open==7.1.0
 soupsieve==2.7
-spacy==3.8.6
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 srsly==2.5.1
