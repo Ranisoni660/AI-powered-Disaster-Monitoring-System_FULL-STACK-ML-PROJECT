@@ -8,6 +8,7 @@ certifi==2025.4.26
 charset-normalizer==3.4.2
 click==8.1.8
 cloudpathlib==0.21.1
+spacy==3.8.6
 colorama==0.4.6
 confection==0.1.5
 cymem==2.0.11
