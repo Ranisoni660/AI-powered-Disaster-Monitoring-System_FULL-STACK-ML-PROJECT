@@ -1,0 +1,61 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
+def fetch_leetcode_questions():
+    # Chrome setup 
+    options = Options()
+    options.headless = True
+    options.binary_location = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"  # Chrome ka path
+    
+    # Chrome driver start 
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver.get("https://leetcode.com/discuss/interview-question")  # LeetCode ka page open krwao
+    
+    time.sleep(5)  # Page loading 
+    
+    questions = []  # Questions store krne k liye list
+    categories = []  # Kis type ka question h
+    answers = []  # Answers store krne k liye list
+    
+    # Questions dhoondho page pe
+    elements = driver.find_elements(By.CLASS_NAME, 'truncate')  # Class check krni padegi
+    for elem in elements:
+        questions.append(elem.text.strip())  # Text extraction
+        categories.append("Technical")  # LeetCode h toh Technical hi hoga
+    
+    # Answers bhi uthao (Pehla comment as answer maan rhe h)
+    answer_elements = driver.find_elements(By.CLASS_NAME, 'comment-content')  # Class verify krna padega
+    for ans in answer_elements:
+        answers.append(ans.text.strip())  # Answer extract krlo
+    
+    driver.quit()  # Browser band
+    
+    # Questions aur answers same count hone chahiye
+    if len(answers) < len(questions):
+        answers.extend(["No answer found"] * (len(questions) - len(answers)))  # Jo missing h usko No answer de do
+    
+    return list(zip(categories, questions, answers))  # Final list 
+
+def save_to_csv(data, filename="interview_questions.csv"):
+    # CSV file m likh rhe h
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Source", "Category", "Question", "Answer"])  # Header
+        for category, question, answer in data:
+            writer.writerow(["LeetCode", category, question, answer])  # Row likh do
+
+def main():
+    print("LeetCode se questions aur answers fetch ho rhe h...")
+    data = fetch_leetcode_questions()
+    save_to_csv(data)  # File m save kr do
+    print("Ho gaya! Questions aur answers save ho gaye interview_questions.csv m.")
+
+if __name__ == "__main__":
+    main()  
