@@ -1,24 +1,30 @@
-# Use official Python 3.10 image (compatible with spaCy etc.)
+# Use Python base with apt
 FROM python:3.10-slim
+
+# Prevents prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies needed for building wheels (e.g., blis, murmurhash)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Install system packages for spaCy models and compilation
-RUN apt-get update && apt-get install -y gcc g++ build-essential curl
-
-# Copy requirements and install
+# Install Python dependencies
 COPY requirements.txt .
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy models if needed (optional)
-# RUN python -m spacy download en_core_web_sm
+# Download spaCy models (optional — depends on how you're loading them)
+RUN python -m spacy download en_core_web_sm
 
-# Copy the rest of your code
+# Copy project files
 COPY . .
 
-# Expose port (Render expects this)
-EXPOSE 8000
+# Expose port and set gunicorn as default entry
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
 
-# Run the app using gunicorn (Render will look for this)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
