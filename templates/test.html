@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>AI-DMS - Disaster Tweet Analysis</title>
+    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/owl.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animate.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/swiper@7/swiper-bundle.min.css"/>
+    <style>
+        #tweetFile {
+            display: none;
+        }
+        .file-upload-box {
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+        .file-upload-box:hover {
+            color: #6c63ff;
+        }
+        #selected-file-name {
+            margin-left: 10px;
+            color: #ccc;
+            font-size: 0.98em;
+        }
+        .upload-section, .file-upload-box {
+    position: relative;
+    z-index: 10;
+}
+.ai-dms-gif-row {
+    z-index: 1;
+    pointer-events: none; /* Safe if GIFs don't need to be clickable themselves */
+}
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="accent-top-line"></div>
+    <div id="js-preloader" class="js-preloader">
+        <div class="preloader-inner">
+            <span class="dot"></span>
+            <div class="dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+    <header class="header-area header-sticky">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <nav class="main-nav">
+                        <a href="/home" class="logo">
+                            <img src="{{ url_for('static', filename='img/Planet Earth Spinning Sticker by namslam.gif') }}" alt="Earth Logo" class="logo-earth">
+                            <span class="logo-text">AI-DMS</span>
+                        </a>
+                        <ul class="nav">
+                            <li><a href="/home" class="active">Home</a></li>
+                            <li><a href="/browse">Disaster Tweets</a></li>
+                            <li><a href="/details">Analysis</a></li>
+                            <li><a href="/streams">Live Feeds</a></li>
+                            <li>
+                                <div class="nav-profile-theme">
+                                    <a href="/profile">Profile <img src="{{ url_for('static', filename='img/profile-header.jpg') }}" alt=""></a>
+                                    <i class="fas fa-moon theme-toggle" id="theme-toggle" title="Toggle Theme"></i>
+                                </div>
+                            </li>
+                        </ul>
+                        <a class='menu-trigger'>
+                            <span>Menu</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-content">
+                    <div class="main-banner">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="header-text">
+                                    <h6>Welcome to AI-DMS</h6>
+                                    <h4>Analyze Disaster Tweets</h4>
+                                    <form id="analyzeForm" action="/analyze" method="POST">
+                                        <div class="search-input-main">
+                                            <input type="text" placeholder="Enter a disaster-related tweet" id="searchText" name="tweet" required/>
+                                        </div>
+                                        <div class="main-button" style="margin-bottom:0;">
+                                            <button type="submit" class="gradient-button">Analyze Tweet</button>
+                                        </div>
+                                    </form>
+                                    <div id="analysis-result" class="analysis-result-card" style="display: none;">
+                                        <h4><i class="fas fa-clipboard-check"></i> Tweet Analysis Result</h4>
+                                        <ul>
+                                            <li><span class="result-icon"><i class="fas fa-comment-alt"></i></span><strong>Tweet:</strong> <span id="result-tweet"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-broom"></i></span><strong>Cleaned:</strong> <span id="result-cleaned-tweet"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-language"></i></span><strong>Translated:</strong> <span id="result-translated-tweet"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-globe"></i></span><strong>Language:</strong> <span id="result-language"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-exclamation-triangle"></i></span><strong>Is Disaster:</strong> <span id="result-is-disaster"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-bullseye"></i></span><strong>Confidence:</strong> <span id="result-confidence"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-map-marker-alt"></i></span><strong>Location:</strong> <span id="result-location"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-list-alt"></i></span><strong>Category:</strong> <span id="result-category"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-smile"></i></span><strong>Sentiment:</strong> <span id="result-sentiment"></span></li>
+                                            <li><span class="result-icon"><i class="fas fa-fire"></i></span><strong>Severity:</strong> <span id="result-severity-score"></span></li>
+                                        </ul>
+                                    </div>
+                                    <!-- Integrated Upload Section -->
+                                    <div class="upload-section" style="margin-top:30px;">
+                                        <p>Have multiple disaster tweets?</p>
+                                        <p>Upload your file here</p>
+                                        <label for="tweetFile" class="file-upload-box">
+                                            <i class="fas fa-upload"></i> <span>Choose Your File</span>
+                                        </label>
+                                        <input type="file" id="tweetFile" accept=".txt,.csv">
+                                        <span id="selected-file-name"></span>
+                                        <div class="main-button">
+                                            <button class="gradient-button reverse" id="uploadButton">Upload & Analyze</button>
+                                        </div>
+                                        <div id="upload-progress-bar" style="display:none;">
+                                            <div id="upload-progress"></div>
+                                        </div>
+                                        <div id="upload-progress-text" style="display:none;"></div>
+                                    </div>
+                                    <!-- End Upload Section -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <!-- GIF Stickers 2.gif left, 3.gif right under the AI-DMS box -->
+                    <div class="ai-dms-gif-row">
+                        <div class="ai-dms-gif-side">
+                            <img src="{{ url_for('static', filename='img/stick/2.gif') }}" alt="Sticker 2">
+                        </div>
+                        <div class="ai-dms-gif-side" style="text-align: right;">
+                            <img src="{{ url_for('static', filename='img/stick/3.gif') }}" alt="Sticker 3">
+                        </div>
+                    </div>
+                    <!-- Disaster Types: Only first four visible by default -->
+                    <div class="disaster-types">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="heading-section">
+                                    <h4><em>Types of</em> Disasters</h4>
+                                </div>
+                                <div class="row">
+                                    <!-- First 4 visible -->
+                                    <div class="col-lg-3 col-sm-6">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/d1.jpg') }}" alt="Earthquake">
+                                            <h4>Earthquakes<br><span>Global Alerts</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.9</li>
+                                                <li><i class="fa fa-eye"></i> 1.2M</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/d2.jpg') }}" alt="Hurricane">
+                                            <h4>Hurricanes<br><span>Storm Watch</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.8</li>
+                                                <li><i class="fa fa-eye"></i> 1.5M</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/d3.jpg') }}" alt="Flood">
+                                            <h4>Floods<br><span>Emergency Response</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.7</li>
+                                                <li><i class="fa fa-eye"></i> 900K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/d4.jpg') }}" alt="Wildfire">
+                                            <h4>Wildfires<br><span>Fire Alerts</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.8</li>
+                                                <li><i class="fa fa-eye"></i> 1.1M</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <!-- Hidden unless "Show More" -->
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/tor.jpg') }}" alt="Tornado">
+                                            <h4>Tornadoes<br><span>Storm Alerts</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.6</li>
+                                                <li><i class="fa fa-eye"></i> 800K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/ts.jpg') }}" alt="Tsunami">
+                                            <h4>Tsunamis<br><span>Coastal Warnings</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.7</li>
+                                                <li><i class="fa fa-eye"></i> 950K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/11.jpg') }}" alt="Volcanic Eruption">
+                                            <h4>Volcanic Eruptions<br><span>Eruption Alerts</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.5</li>
+                                                <li><i class="fa fa-eye"></i> 700K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/su.jpg') }}" alt="Drought">
+                                            <h4>Droughts<br><span>Water Shortages</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.4</li>
+                                                <li><i class="fa fa-eye"></i> 600K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/snow.jpg') }}" alt="Blizzard">
+                                            <h4>Blizzards<br><span>Winter Storms</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.6</li>
+                                                <li><i class="fa fa-eye"></i> 850K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/lands.jpg') }}" alt="Landslide">
+                                            <h4>Landslides<br><span>Geological Hazards</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.5</li>
+                                                <li><i class="fa fa-eye"></i> 650K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/heat.jpg') }}" alt="Heatwave">
+                                            <h4>Heatwaves<br><span>Extreme Heat</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.3</li>
+                                                <li><i class="fa fa-eye"></i> 500K</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-sm-6 hidden">
+                                        <div class="item">
+                                            <img src="{{ url_for('static', filename='img/cyc.jpg') }}" alt="Cyclone">
+                                            <h4>Cyclones<br><span>Tropical Storms</span></h4>
+                                            <ul>
+                                                <li><i class="fa fa-star"></i> 4.7</li>
+                                                <li><i class="fa fa-eye"></i> 1M</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="main-button">
+                                            <a href="#" class="gradient-button" id="explore-more">Explore More</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sample-tweets">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="heading-section">
+                                    <h4><em>Sample</em> Disaster Tweets</h4>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">French: "Inondation à Paris, c'est horrible! #SOS"</div>
+                                    <button class="copy-button" data-text="Inondation à Paris, c'est horrible! #SOS">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">English: "Hurricane hitting Florida now! @WeatherChannel https://t.co/abc"</div>
+                                    <button class="copy-button" data-text="Hurricane hitting Florida now! @WeatherChannel https://t.co/abc">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">French: "Un tremblement de terre vient de frapper ! Restez en sécurité !"</div>
+                                    <button class="copy-button" data-text="Un tremblement de terre vient de frapper ! Restez en sécurité !">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">Spanish: "Si hubiera un #Inundación en México, estaríamos preparados. #Planificación"</div>
+                                    <button class="copy-button" data-text="Si hubiera un #Inundación en México, estaríamos preparados. #Planificación">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">French: "Défilé de mode 'Tornade' à Paris, incroyable! #Fashion #Tornado"</div>
+                                    <button class="copy-button" data-text="Défilé de mode 'Tornade' à Paris, incroyable! #Fashion #Tornado">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">English: "My love is like tsunami in florida"</div>
+                                    <button class="copy-button" data-text="My love is like tsunami in florida">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">Japanese: "地震が起きた！皆さん安全に！"</div>
+                                    <button class="copy-button" data-text="地震が起きた！皆さん安全に！">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">Russian: "Только что произошло землетрясение в Москве! Будьте осторожны!"</div>
+                                    <button class="copy-button" data-text="Только что произошло землетрясение в Москве! Будьте осторожны!">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">English: "Storming the charts with my new song!"</div>
+                                    <button class="copy-button" data-text="Storming the charts with my new song!">Copy</button>
+                                </div>
+                                <div class="tweet-item">
+                                    <div class="tweet-text">Hindi: "मुंबई में बाढ़, भयानक स्थिति! #Flood"</div>
+                                    <button class="copy-button" data-text="मुंबई में बाढ़, भयानक स्थिति! #Flood">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="disaster-tips">
+                        <div class="col-lg-12">
+                            <div class="heading-section">
+                                <h4><em>Disaster Preparedness</em> Tips</h4>
+                            </div>
+                            <div class="item">
+                                <img src="{{ url_for('static', filename='img/d1.jpg') }}" alt="Earthquake Preparedness">
+                                <div>
+                                    <h4>Earthquake Safety</h4>
+                                    <p>Drop, cover, and hold on during shaking. Secure heavy objects and create an emergency kit with water, food, and first-aid supplies.</p>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <img src="{{ url_for('static', filename='img/d2.jpg') }}" alt="Hurricane Preparedness">
+                                <div>
+                                    <h4>Hurricane Preparedness</h4>
+                                    <p>Board up windows, stock up on non-perishable food, and follow evacuation orders. Keep a battery-powered radio for updates.</p>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <img src="{{ url_for('static', filename='img/d3.jpg') }}" alt="Flood Preparedness">
+                                <div>
+                                    <h4>Flood Safety</h4>
+                                    <p>Move to higher ground, avoid flooded roads, and elevate appliances above flood levels. Have a communication plan ready.</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="main-button">
+                                    <a href="{{ url_for('browse') }}" class="gradient-button">Learn More</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <p>Copyright © 2025 <a href="#">AI-DMS</a> Company. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/isotope.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/owl-carousel.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tabs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popup.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+    <script>
+        document.getElementById('tweetFile').addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : '';
+            document.getElementById('selected-file-name').textContent = fileName;
+        });
+ window.addEventListener('load', () => {
+            const preloader = document.getElementById('js-preloader');
+            preloader.classList.add('loaded');
+        });
+
+        function copyTweet(button) {
+            const tweetText = button.getAttribute('data-text');
+            navigator.clipboard.writeText(tweetText).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        document.querySelectorAll('.copy-button').forEach(btn =>
+            btn.addEventListener('click', function() { copyTweet(this); })
+        );
+
+        function applyTheme(theme) {
+            const body = document.body;
+            const icon = document.getElementById('theme-toggle');
+            body.classList.remove('dark-theme', 'light-theme');
+            body.classList.add(theme + '-theme');
+            icon.classList.remove('fa-moon', 'fa-sun');
+            icon.classList.add(theme === 'dark' ? 'fa-moon' : 'fa-sun');
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const body = document.body;
+            const isDark = body.classList.contains('dark-theme');
+            const newTheme = isDark ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            applyTheme(savedTheme);
+
+            // Toggle hidden disaster types
+            const disasterTypes = document.querySelector('.disaster-types');
+            const exploreButton = document.getElementById('explore-more');
+            if (exploreButton) {
+                exploreButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    disasterTypes.classList.toggle('show-more');
+                    if (disasterTypes.classList.contains('show-more')) {
+                        this.textContent = 'Show Less';
+                    } else {
+                        this.textContent = 'Explore More';
+                    }
+                });
+            } else {
+                console.error('Explore More button not found');
+            }
+        });
+        document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tweet = document.getElementById('searchText').value;
+            const resultDiv = document.getElementById('analysis-result');
+            try {
+                const response = await fetch("/analyze", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ tweet: tweet })
+                });
+                const data = await response.json();
+                if (data.error) { alert(data.error); return; }
+                document.getElementById('result-tweet').textContent = data.tweet || 'N/A';
+                document.getElementById('result-cleaned-tweet').textContent = data.cleaned_tweet || 'N/A';
+                document.getElementById('result-translated-tweet').textContent = data.translated_tweet || 'N/A';
+                document.getElementById('result-language').textContent = data.language || 'N/A';
+                document.getElementById('result-is-disaster').textContent = data.is_disaster ? 'Yes' : 'No';
+                document.getElementById('result-confidence').textContent = data.confidence ? `${(data.confidence * 100).toFixed(0)}%` : 'N/A';
+                document.getElementById('result-location').textContent = data.location || 'N/A';
+                document.getElementById('result-category').textContent = data.category || 'N/A';
+                document.getElementById('result-sentiment').textContent = data.sentiment || 'N/A';
+                document.getElementById('result-severity-score').textContent = data.severity_score || 'N/A';
+                resultDiv.style.display = 'block';
+                setTimeout(() => resultDiv.classList.add('show'), 50);
+            } catch (error) {
+                console.error('Error analyzing tweet:', error);
+                alert('Failed to analyze tweet. Please try again.');
+            }
+        });
+
+        // Upload with progress bar
+        document.getElementById('uploadButton').addEventListener('click', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('tweetFile');
+            const file = fileInput.files[0];
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progress = document.getElementById('upload-progress');
+            const progressText = document.getElementById('upload-progress-text');
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            // Initialize progress bar
+            progressBar.style.display = 'block';
+            progressText.style.display = 'block';
+            progress.style.width = '0%';
+            progressText.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', "/upload_file", true);
+            xhr.responseType = 'blob';
+            const startTime = Date.now();
+
+            let lastUpdate = 0;
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const now = Date.now();
+                    if (now - lastUpdate < 100) return;
+                    lastUpdate = now;
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    requestAnimationFrame(() => {
+                        progress.style.width = `${percent}%`;
+                        progressText.textContent = percent < 100 ? `Uploading... ${percent}%` : 'Processing file...';
+                    });
+                } else {
+                    progressText.textContent = 'Uploading... (progress unavailable)';
+                }
+            };
+
+            xhr.onload = function() {
+                const endTime = Date.now();
+                requestAnimationFrame(() => {
+                    progress.style.width = '100%';
+                    progressText.textContent = 'Processing complete!';
+                });
+                if (xhr.status === 200) {
+                    const url = window.URL.createObjectURL(xhr.response);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'tweet_analysis_results.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    setTimeout(() => {
+                        progressBar.style.display = 'none';
+                        progressText.style.display = 'none';
+                        progress.style.width = '0%';
+                    }, 1000);
+                    alert('File analyzed and downloaded!');
+                } else {
+                    progressBar.style.display = 'none';
+                    progressText.style.display = 'none';
+                    progress.style.width = '0%';
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = function() {
+                            alert(reader.result || 'Failed to analyze file.');
+                        };
+                        reader.readAsText(xhr.response);
+                    } catch {
+                        alert('Failed to analyze file.');
+                    }
+                }
+            };
+
+            xhr.onerror = function() {
+                progressBar.style.display = 'none';
+                progressText.style.display = 'none';
+                progress.style.width = '0%';
+                alert('Failed to upload file. Please try again.');
+            };
+
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>
