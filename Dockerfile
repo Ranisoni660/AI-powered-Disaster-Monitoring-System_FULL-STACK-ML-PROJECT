@@ -1,22 +1,22 @@
-# Use compatible Python version
-FROM python:3.10-slim
+# Use Python
+FROM python:3.10
 
 # Set working directory
 WORKDIR /app
 
-# Copy and install dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Download spaCy models
-RUN python -m spacy download xx_ent_wiki_sm
-RUN python -m spacy download en_core_web_sm
-
-
-# Copy the rest of the application
+# Copy your app code
 COPY . .
 
-# Start the app with gunicorn
-CMD ["gunicorn", "--workers=1", "--threads=1", "--preload", "-b", "0.0.0.0:8000", "app:app"]
+# Install pip dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
+# Install spaCy models
+RUN python -m spacy download en_core_web_sm
+RUN python -m spacy download xx_ent_wiki_sm
+
+# Expose port
+EXPOSE 5000
+
+# Run your app
+CMD ["python", "app.py"]
